@@ -1,6 +1,7 @@
 # spell checker version
 VERSION=3.2
 MAKESCRIPT=../make-extensions/make-extensions
+KEEPIF=./keepif
 
 all: gd_GB.zip
 
@@ -34,21 +35,21 @@ gd_inclusion-utf8.txt gd_corpus-utf8.txt: glan.txt toadaptxt.pl gd-freq.txt
 ####### OLD SCRABBLE STUFF #######
 
 clann-scrabble.txt: clann.txt striplist.txt
-	LC_ALL=C sort -u clann.txt | keepif -n striplist.txt > $@
+	LC_ALL=C sort -u clann.txt | $(KEEPIF) -n striplist.txt > $@
 
 gd_GB-scrabble.aff: gd_GB.aff
 	cat gd_GB.aff | sed '/^SFX K.*igin/s/^/#/' | sed '/^SFX K Y/s/6/4/' > $@
 
 glan-scrabble.txt: gd_GB.dic gd_GB-scrabble.aff unmunch.sh clann-scrabble.txt striplist.txt
-	bash unmunch.sh gd_GB.dic gd_GB-scrabble.aff | keepif -n striplist.txt | keepif -n clann-scrabble.txt | LC_ALL=C sort -u > $@
+	bash unmunch.sh gd_GB.dic gd_GB-scrabble.aff | $(KEEPIF) -n striplist.txt | $(KEEPIF) -n clann-scrabble.txt | LC_ALL=C sort -u > $@
 
 # dwelly.txt comes from ~/seal/idirlamha/gd/dwelly
 dwelly-scrabble.txt: dwelly.txt clann-scrabble.txt glan-scrabble.txt striplist.txt
-	cat dwelly.txt | keepif -n striplist.txt | keepif -n clann-scrabble.txt | keepif -n glan-scrabble.txt > $@
+	cat dwelly.txt | $(KEEPIF) -n striplist.txt | $(KEEPIF) -n clann-scrabble.txt | $(KEEPIF) -n glan-scrabble.txt > $@
 
 # much smaller than glan.txt just because of no hyphens
 scrabble.txt: clann-scrabble.txt glan-scrabble.txt dwelly-scrabble.txt
-	(cat clann-scrabble.txt; cat glan-scrabble.txt | sed 's/$$/=;1/'; cat dwelly-scrabble.txt | sed 's/$$/=;2/') | egrep -v '[A-ZÀÈÌÒÙÁÉÓ]' | egrep -v "[^a-il-prstuáéíóúàèìòù=;12]" | egrep '..' | egrep -v '^.=;' | egrep -v 'ê' | tr "áéíóú" "àèìòù" | tr 'a-zàèìòù' 'A-ZÀÈÌÒÙ' | egrep -v '[^BCDFGMPST]H' | sed 's/BH/Ḃ/g; s/CH/Ċ/g; s/DH/Ḋ/g; s/FH/Ḟ/g; s/GH/Ġ/g; s/MH/Ṁ/g; s/PH/Ṗ/g; s/SH/Ṡ/g; s/TH/Ṫ/g' | LC_ALL=C sort -u > $@
+	(cat clann-scrabble.txt; cat glan-scrabble.txt | sed 's/$$/=;1/'; cat dwelly-scrabble.txt | sed 's/$$/=;2/') | egrep -v '[A-ZÀÈÌÒÙÁÉÓ]' | egrep -v "[^a-il-prstuáéíóúàèìòù=;12]" | egrep '..' | egrep -v '^.=;' | egrep -v 'ê' | tr "áéíóú" "àèìòù" | tr 'a-zàèìòù' 'A-ZÀÈÌÒÙ' | egrep -v '[^BCDFGMPST]H' | sed 's/=;2//' | LC_ALL=C sort -u > $@
 
 scrabble.zip: scrabble.txt
 	zip $@ scrabble.txt
@@ -69,7 +70,7 @@ old_gd_GB.dic : all.txt withflags.txt grave-all.txt grave-withflags.txt striplis
 	cat all.txt withflags.txt grave-all.txt grave-withflags.txt | perl lumpaffixes.pl | LC_ALL=C sort -u | egrep -v -f striplist-patterns.txt > $@
 	cat unlenitables.txt | while read x; do sed -i "s/^\($$x\/.*\)S/\1/" $@; done
 	sed -i "1s/.*/`cat gd_GB.dic | wc -l`\n&/" $@
-    
+
 # AFB entries from 2nd field - all inflected forms
 all.txt : $(SOURCE)
 	cat $(SOURCE) | egrep -v '^#' | tr -d '\015' | sed 's/ﬁ/fi/g' | sed 's/,dòighean-/, dòighean-/' | tr -d "\t" | tr -d '*:' | sed "s/’/'/g" | sed 's/…//g' | sed 's/""/\\"/g' | sed 's/^[^,]*,//' | sed 's/\\"//g' | sed 's/,[^,]*$$//' | sed 's/^"//' | sed 's/"$$//' | sed 's/([^)]*)//g' | sed 's/\[[^ ]*\]//g' | sed 's/^ *//' | sed 's/ *$$//' | sed 's/, /\n/g' | tr '/' "\n" | tr " " "\n" | sed 's/[!,.;?]*$$//' | egrep -v '^\[.*\]$$' | sed 's/^(\(.*\))$$/\1/' | sed 's/^{\(.*\)}$$/\1/' | sed 's/^(//' | sed 's/[!,.;?)]*$$//' | egrep -v '[~#&.;){}!0-9]' | sed '/\]/d' | sed '/\[/d' | tr -d '(' | egrep '[A-Za-z]' | egrep -v '^\(-' | egrep -v "'.*'" | egrep -v -- '^-' | egrep -v '^(B|neg)$$' | LC_ALL=C sort -u > $@
@@ -98,11 +99,11 @@ names.txt: $(SOURCE)
 # cat verb.txt | sed '/^[aeiouAEIOUàèìòùÀÈÌÒÙáéíóúÁÉÍÓÚ]/s/,.*/\/EHK/' | sed '/^[Ff]/s/,.*/\/EK/' | sed '/,/s/,.*/\/K/' >> $@
 withflags.txt : adjectives.txt masc.txt fem.txt verb.txt names.txt
 	cat masc.txt | sed '/^[aeiouAEIOUàèìòùÀÈÌÒÙáéíóúÁÉÍÓÚ]/s/,.*/\/EHKNT/' | sed '/^[Ff]/s/,.*/\/EK/' | sed '/^[Ss]/s/,.*/\/KT/' | sed '/,/s/,.*/\/K/' > $@
-	cat masc.txt | tr " ," "\n\n" | egrep '.' | LC_ALL=C sort -u | sed '/^[aeiouAEIOUàèìòùÀÈÌÒÙáéíóúÁÉÍÓÚ]/s/$$/\/EHKN/' | sed '/^[Ff]/s/$$/\/EK/' | sed '/^[Ss]/s/$$/\/KT/' | sed '/^[^aeiouAEIOUàèìòùÀÈÌÒÙáéíóúÁÉÍÓÚFfSs]/s/$$/\/K/' >> $@ 
+	cat masc.txt | tr " ," "\n\n" | egrep '.' | LC_ALL=C sort -u | sed '/^[aeiouAEIOUàèìòùÀÈÌÒÙáéíóúÁÉÍÓÚ]/s/$$/\/EHKN/' | sed '/^[Ff]/s/$$/\/EK/' | sed '/^[Ss]/s/$$/\/KT/' | sed '/^[^aeiouAEIOUàèìòùÀÈÌÒÙáéíóúÁÉÍÓÚFfSs]/s/$$/\/K/' >> $@
 	cat fem.txt | sed '/^[aeiouAEIOUàèìòùÀÈÌÒÙáéíóúÁÉÍÓÚ]/s/,.*/\/EHKN/' | sed '/^[Ff]/s/,.*/\/EK/' | sed '/^[Ss]/s/,.*/\/KT/' | sed '/,/s/,.*/\/K/' >> $@
-	cat fem.txt | tr " ," "\n\n" | egrep '.' | LC_ALL=C sort -u | sed '/^[aeiouAEIOUàèìòùÀÈÌÒÙáéíóúÁÉÍÓÚ]/s/$$/\/EHKN/' | sed '/^[Ff]/s/$$/\/EK/' | sed '/^[Ss]/s/$$/\/KT/' | sed '/^[^aeiouAEIOUàèìòùÀÈÌÒÙáéíóúÁÉÍÓÚFfSs]/s/$$/\/K/' >> $@ 
+	cat fem.txt | tr " ," "\n\n" | egrep '.' | LC_ALL=C sort -u | sed '/^[aeiouAEIOUàèìòùÀÈÌÒÙáéíóúÁÉÍÓÚ]/s/$$/\/EHKN/' | sed '/^[Ff]/s/$$/\/EK/' | sed '/^[Ss]/s/$$/\/KT/' | sed '/^[^aeiouAEIOUàèìòùÀÈÌÒÙáéíóúÁÉÍÓÚFfSs]/s/$$/\/K/' >> $@
 	cat adjectives.txt | sed '/^[aeiouAEIOUàèìòùÀÈÌÒÙáéíóúÁÉÍÓÚ]/s/,.*/\/H/' | sed '/,/s/,.*//' >> $@
-	cat names.txt | tr " ," "\n\n" | egrep '.' | LC_ALL=C sort -u | sed '/^[AEIOUÀÈÌÒÙÁÉÍÓÚ]/s/$$/\/HEN/' | sed '/^F/s/$$/\/E/' >> $@ 
+	cat names.txt | tr " ," "\n\n" | egrep '.' | LC_ALL=C sort -u | sed '/^[AEIOUÀÈÌÒÙÁÉÍÓÚ]/s/$$/\/HEN/' | sed '/^F/s/$$/\/E/' >> $@
 	sed -i '/^àrd\//s/$$/T/; /^ùr\//s/$$/T/; /^ath\//s/$$/T/' $@
 	echo "aonamh/EHT" >> $@
 	echo "ochdamh/EHT" >> $@
@@ -126,7 +127,7 @@ withflags-justheads.txt : withflags.txt grave-withflags.txt
 #  dwelly.txt comes from idirlamha/gd/dwelly, "all.txt" target
 #  NO LONGER USED!
 dwelly-aff.txt : dwelly.txt withflags-justheads.txt
-	cat dwelly.txt | keepif -n withflags-justheads.txt | sed '/^[aeiouAEIOUàèìòùÀÈÌÒÙáéíóúÁÉÍÓÚ][a-zàèìòùáéíóú]/s/$$/\/EHNT/' | sed '/^[Ff][a-zàèìòùáéíóú]/s/$$/\/ES/' | sed '/^[Ss][aeiouàèìòùáéíóúlnr]/s/$$/\/ST/' | sed '/^[BbCcDdGgMmPpTt][a-gi-zàèìòùáéíóú]/s/$$/\/S/' > $@
+	cat dwelly.txt | $(KEEPIF) -n withflags-justheads.txt | sed '/^[aeiouAEIOUàèìòùÀÈÌÒÙáéíóúÁÉÍÓÚ][a-zàèìòùáéíóú]/s/$$/\/EHNT/' | sed '/^[Ff][a-zàèìòùáéíóú]/s/$$/\/ES/' | sed '/^[Ss][aeiouàèìòùáéíóúlnr]/s/$$/\/ST/' | sed '/^[BbCcDdGgMmPpTt][a-gi-zàèìòùáéíóú]/s/$$/\/S/' > $@
 
 # NO LONGER USED!
 gd_GB-dwelly.dic : dwelly-aff.txt
