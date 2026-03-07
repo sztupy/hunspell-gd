@@ -49,7 +49,7 @@ dwelly-scrabble.txt: dwelly.txt clann-scrabble.txt glan-scrabble.txt striplist.t
 
 # much smaller than glan.txt just because of no hyphens
 scrabble.txt: clann-scrabble.txt glan-scrabble.txt dwelly-scrabble.txt
-	(cat clann-scrabble.txt; cat glan-scrabble.txt | sed 's/$$/=;1/'; cat dwelly-scrabble.txt | sed 's/$$/=;2/') | egrep -v '[A-ZÀÈÌÒÙÁÉÓ]' | egrep -v "[^a-il-prstuáéíóúàèìòù=;12]" | egrep '..' | egrep -v '^.=;' | egrep -v 'ê' | tr "áéíóú" "àèìòù" | tr 'a-zàèìòù' 'A-ZÀÈÌÒÙ' | egrep -v '[^BCDFGMPST]H' | sed 's/=;2//' | LC_ALL=C sort -u > $@
+	(cat clann-scrabble.txt; cat glan-scrabble.txt | sed 's/$$/=;1/'; cat dwelly-scrabble.txt | sed 's/$$/=;2/') | egrep -v '[A-ZÀÈÌÒÙÁÉÓ]' | egrep -v "[^a-il-prstuáéíóúàèìòù=;12]" | egrep '..' | egrep -v '^.=;' | egrep -v 'ê' | tr "áéíóú" "àèìòù" | tr 'a-zàèìòù' 'A-ZÀÈÌÒÙ' | egrep -v '[^BCDFGMPST]H' | sed 's/=;1//' | sed 's/=;2//' | egrep -v "[^A-ZÀÈÌÒÙ]" | LC_ALL=C sort -u > $@
 
 scrabble.zip: scrabble.txt
 	zip $@ scrabble.txt

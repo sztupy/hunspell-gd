@@ -14,7 +14,7 @@ set_encoding() {
 
 set_encoding $2
 
-awk '
+gawk '
 function split_flag_vector(st) {
   if(fltype=="num") st2 = st ",";
   else if(fltype=="long") st2 = gensub("..","&,","g",st);
